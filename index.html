@@ -16,7 +16,7 @@
     <title>Document</title>
   </head>
   <body style="height: 100vh; width: 100%">
-    <canvas id="myCanvas" style="height: 100vh; width: 100%"></canvas>
+    <canvas id="myCanvas" style="height: 100vh; width: 100%" resize></canvas>
     <div style="position: absolute; right: 0; top: 0">
       <button onclick="setMode('pan')">pan</button>
       <button onclick="setMode('rectangle')">rectangle</button>
@@ -30,7 +30,29 @@
         'https://eapidata.obs.cn-north-4.myhuaweicloud.com/6e7490dc-ab6b-4436-842e-ba0870dbf532.jpg'
       );
       myLabel.setMode('pan');
-
+      myLabel.addRectangle({
+        from: [100, 100],
+        to: [200, 200],
+        strokeColor: 'green',
+        strokeWidth: 3,
+        fillColor: '#ff000033',
+        data: {
+          id: new Date().getTime(),
+        },
+      });
+      myLabel.addPolygon(
+        [
+          [0, 0],
+          [100, 0],
+          [200, 100],
+          [100, 100],
+        ],
+        {
+          strokeColor: 'red',
+          strokeWidth: 1,
+          fillColor: '#ff000033',
+        }
+      );
       function setMode(mode) {
         myLabel.setMode(mode);
       }

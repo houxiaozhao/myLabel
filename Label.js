@@ -8,7 +8,11 @@ class MyLabel {
     this.el = el;
     this.image = image;
     this.raster = null;
-    this.layer = null;
+    this.group = new Group({
+      applyMatrix: false,
+      position: [0, 0],
+      selected: true,
+    });
     this.panTool = new Tool();
     this.rectangleTool = new Tool();
     this.polygonTool = new Tool();
@@ -19,12 +23,15 @@ class MyLabel {
   }
 
   init() {
-    this.layer = new Layer();
-    project.addLayer(this.layer);
     this.raster = new Raster({
       source: this.image,
-      position: view.center,
+      position: [0, 0],
+      parent: this.group,
     });
+    this.raster.onLoad = () => {
+      this.raster.position = [this.raster.width / 2, this.raster.height / 2];
+    };
+
     this.el.addEventListener('wheel', event => {
       this.onMouseWheel(event);
     });
@@ -42,9 +49,7 @@ class MyLabel {
     view.zoom = newZoom;
     const zoomScale = oldZoom / newZoom;
     const centerAdjust = viewPos.subtract(oldCenter);
-    const offset = viewPos
-      .subtract(centerAdjust.multiply(zoomScale))
-      .subtract(oldCenter);
+    const offset = viewPos.subtract(centerAdjust.multiply(zoomScale)).subtract(oldCenter);
     view.center = view.center.add(offset);
   }
   initPanTool() {
@@ -52,7 +57,7 @@ class MyLabel {
     let activePath;
     let hitIndex;
     this.panTool.onMouseDown = e => {
-      let hitResult = this.layer.hitTest(e.point, {
+      let hitResult = this.group.hitTest(e.point, {
         segments: true,
         stroke: true,
         curves: true,
@@ -60,6 +65,7 @@ class MyLabel {
         guide: false,
         tolerance: 8 / paper.view.zoom,
       });
+      console.log(hitResult);
       project.selectedItems.forEach(item => {
         item.selected = false;
       });
@@ -78,32 +84,33 @@ class MyLabel {
       } else {
         panMode = '';
       }
+      console.log('panMode', panMode);
     };
     this.panTool.onMouseDrag = e => {
+      let point;
+      if (activePath) point = activePath.globalToLocal(e.point);
+      //   console.log('鼠标坐标', e.point, point);
+      //   console.log('group', this.group.bounds.x, this.group.bounds.y);
       if (panMode === '') {
-        this.layer.position = this.layer.position.add(e.delta);
+        this.group.position = this.group.position.add(e.delta);
       } else if (panMode === 'fill') {
         activePath.position = activePath.position.add(e.delta);
       } else if (panMode === 'stroke') {
         if (activePath.data.type === 'rectangle') {
-          activePath.segments[hitIndex].point[hitIndex % 2 ? 'y' : 'x'] =
-            e.point[hitIndex % 2 ? 'y' : 'x'];
-          activePath.segments[hitIndex].next.point[hitIndex % 2 ? 'y' : 'x'] =
-            e.point[hitIndex % 2 ? 'y' : 'x'];
+          let axis = hitIndex % 2 ? 'y' : 'x';
+          activePath.segments[hitIndex].point[axis] = point[axis];
+          activePath.segments[hitIndex].next.point[axis] = point[axis];
         } else if (activePath.data.type == 'polygon') {
         }
       } else if (panMode === 'segment') {
         if (activePath.data.type === 'rectangle') {
-          activePath.segments[hitIndex].point.x = e.point.x;
-          activePath.segments[hitIndex].point.y = e.point.y;
-          activePath.segments[hitIndex].next.point[hitIndex % 2 ? 'y' : 'x'] =
-            e.point[hitIndex % 2 ? 'y' : 'x'];
-          activePath.segments[hitIndex].previous.point[
-            hitIndex % 2 ? 'x' : 'y'
-          ] = e.point[hitIndex % 2 ? 'x' : 'y'];
+          activePath.segments[hitIndex].point.x = point.x;
+          activePath.segments[hitIndex].point.y = point.y;
+          activePath.segments[hitIndex].next.point[hitIndex % 2 ? 'y' : 'x'] = point[hitIndex % 2 ? 'y' : 'x'];
+          activePath.segments[hitIndex].previous.point[hitIndex % 2 ? 'x' : 'y'] = point[hitIndex % 2 ? 'x' : 'y'];
         } else if (activePath.data.type == 'polygon') {
-          activePath.segments[hitIndex].point.x = e.point.x;
-          activePath.segments[hitIndex].point.y = e.point.y;
+          activePath.segments[hitIndex].point.x = point.x;
+          activePath.segments[hitIndex].point.y = point.y;
         }
       }
     };
@@ -122,6 +129,7 @@ class MyLabel {
         data: {
           type: 'rectangle',
         },
+        parent: this.group,
       });
       rect.removeOnDrag();
     };
@@ -129,7 +137,6 @@ class MyLabel {
 
   initPolygonTool() {
     let polygon;
-    let points = [];
     let clickTime = -1000;
     this.polygonTool.onMouseUp = e => {
       if (!polygon) {
@@ -140,6 +147,7 @@ class MyLabel {
           data: {
             type: 'polygon',
           },
+          parent: this.group,
         });
       }
       if (e.timeStamp - clickTime < 300) {
@@ -148,10 +156,24 @@ class MyLabel {
         polygon = null;
       } else {
         clickTime = e.timeStamp;
-        points.push(e.point);
         polygon.add(e.point);
       }
     };
+  }
+
+  addRectangle(option) {
+    option.data = Object.assign({ type: 'rectangle' }, option.data);
+    option.parent = this.group;
+    new Path.Rectangle(option);
+  }
+  addPolygon(points = [], option) {
+    option.data = Object.assign({ type: 'polygon' }, option.data);
+    option.parent = this.group;
+    option.closed = true;
+    let polygon = new Path(option);
+    points.forEach(point => {
+      polygon.add(point);
+    });
   }
 
   setMode(mode) {
@@ -173,10 +195,6 @@ class MyLabel {
     }
   }
   getAll(option) {
-    let allitem = project.getItems(option);
-    allitem.forEach(item => {
-      console.log(item.bounds.x, item.bounds.y);
-    });
-    return allitem;
+    return this.group.getItems(option);
   }
 }
