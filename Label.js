@@ -3,19 +3,18 @@ class MyLabel {
   minZoom = 0.1;
   maxZoom = 10;
   constructor(el, image) {
-    paper.install(window);
     paper.setup(el);
     this.el = el;
     this.image = image;
     this.raster = null;
-    this.group = new Group({
+    this.group = new paper.Group({
       applyMatrix: false,
       position: [0, 0],
       selected: true,
     });
-    this.panTool = new Tool();
-    this.rectangleTool = new Tool();
-    this.polygonTool = new Tool();
+    this.panTool = new paper.Tool();
+    this.rectangleTool = new paper.Tool();
+    this.polygonTool = new paper.Tool();
     this.init();
     this.initPanTool();
     this.initRectangleTool();
@@ -23,7 +22,7 @@ class MyLabel {
   }
 
   init() {
-    this.raster = new Raster({
+    this.raster = new paper.Raster({
       source: this.image,
       position: [0, 0],
       parent: this.group,
@@ -35,22 +34,22 @@ class MyLabel {
     this.el.addEventListener('wheel', event => {
       this.onMouseWheel(event);
     });
-    view.onResize = this.onResize;
+    paper.view.onResize = this.onResize;
   }
   onMouseWheel(event) {
     const delta = event.deltaY;
     const mousePos = new paper.Point(event.offsetX, event.offsetY);
-    const oldZoom = view.zoom;
-    const oldCenter = view.center;
-    const viewPos = view.viewToProject(mousePos);
-    let newZoom = delta < 0 ? view.zoom * this.factor : view.zoom / this.factor;
+    const oldZoom = paper.view.zoom;
+    const oldCenter = paper.view.center;
+    const viewPos = paper.view.viewToProject(mousePos);
+    let newZoom = delta < 0 ? paper.view.zoom * this.factor : paper.view.zoom / this.factor;
     newZoom = Math.max(newZoom, this.minZoom);
     newZoom = Math.min(newZoom, this.maxZoom);
-    view.zoom = newZoom;
+    paper.view.zoom = newZoom;
     const zoomScale = oldZoom / newZoom;
     const centerAdjust = viewPos.subtract(oldCenter);
     const offset = viewPos.subtract(centerAdjust.multiply(zoomScale)).subtract(oldCenter);
-    view.center = view.center.add(offset);
+    paper.view.center = paper.view.center.add(offset);
   }
   initPanTool() {
     let panMode = '';
@@ -65,8 +64,8 @@ class MyLabel {
         guide: false,
         tolerance: 8 / paper.view.zoom,
       });
-      console.log(hitResult);
-      project.selectedItems.forEach(item => {
+      //   console.log(hitResult);
+      paper.project.selectedItems.forEach(item => {
         item.selected = false;
       });
       if (hitResult && hitResult.item.className !== 'Raster') {
@@ -78,13 +77,17 @@ class MyLabel {
       } else if (hitResult && hitResult.type === 'stroke') {
         panMode = 'stroke';
         hitIndex = hitResult.location.index;
+        if (activePath.data.type === 'polygon') {
+          console.log(hitResult);
+          activePath.insert(hitIndex + 1, new paper.Segment(hitResult.location.point));
+        }
       } else if (hitResult && hitResult.type === 'segment') {
         panMode = 'segment';
         hitIndex = hitResult.segment.index;
       } else {
         panMode = '';
       }
-      console.log('panMode', panMode);
+      //   console.log('panMode', panMode);
     };
     this.panTool.onMouseDrag = e => {
       let point;
@@ -120,9 +123,12 @@ class MyLabel {
   initRectangleTool() {
     let rect;
     this.rectangleTool.onMouseDrag = e => {
-      rect = new Path.Rectangle({
-        from: e.downPoint,
-        to: e.point,
+      let temp = new paper.Path({ parent: this.group });
+      let point = temp.globalToLocal(e.point);
+      let downPoint = temp.globalToLocal(e.downPoint);
+      rect = new paper.Path.Rectangle({
+        from: downPoint,
+        to: point,
         strokeColor: 'red',
         strokeWidth: 3,
         fillColor: '#ff000033',
@@ -139,8 +145,10 @@ class MyLabel {
     let polygon;
     let clickTime = -1000;
     this.polygonTool.onMouseUp = e => {
+      let temp = new paper.Path({ parent: this.group });
+      let point = temp.globalToLocal(e.point);
       if (!polygon) {
-        polygon = new Path({
+        polygon = new paper.Path({
           strokeColor: 'red',
           strokeWidth: 3,
           fillColor: '#ff000033',
@@ -156,28 +164,48 @@ class MyLabel {
         polygon = null;
       } else {
         clickTime = e.timeStamp;
-        polygon.add(e.point);
+        polygon.add(point);
+      }
+    };
+    this.polygonTool.onMouseMove = e => {
+      if (polygon) {
+        console.log(polygon);
+        let temp = new paper.Path({ parent: this.group });
+        let point = temp.globalToLocal(e.point);
+        var path1 = new paper.Path.Line({
+          from: polygon.firstSegment.point,
+          to: point,
+          strokeColor: 'red',
+          strokeWidth: 3,
+          fillColor: '#ff000033',
+        });
+        path1.removeOnMove();
+        var path2 = new paper.Path.Line({
+          from: polygon.lastSegment.point,
+          to: point,
+          strokeColor: 'red',
+          strokeWidth: 3,
+          fillColor: '#ff000033',
+        });
+        path2.removeOnMove();
       }
     };
   }
 
-  addRectangle(option) {
-    option.data = Object.assign({ type: 'rectangle' }, option.data);
-    option.parent = this.group;
-    new Path.Rectangle(option);
+  addRectangle(option, data) {
+    let rect = new paper.Path.Rectangle(Object.assign({ parent: this.group }, option));
+    rect.data = Object.assign({ type: 'rectangle' }, data);
   }
-  addPolygon(points = [], option) {
-    option.data = Object.assign({ type: 'polygon' }, option.data);
-    option.parent = this.group;
-    option.closed = true;
-    let polygon = new Path(option);
+  addPolygon(points = [], option, data) {
+    let polygon = new paper.Path(Object.assign({ parent: this.group, closed: true }, option));
+    polygon.data = Object.assign({ type: 'polygon' }, data);
     points.forEach(point => {
       polygon.add(point);
     });
   }
 
   setMode(mode) {
-    project.selectedItems.forEach(item => {
+    paper.project.selectedItems.forEach(item => {
       item.selected = false;
     });
     switch (mode) {
