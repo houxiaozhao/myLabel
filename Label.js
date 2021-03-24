@@ -71,19 +71,25 @@ class MyLabel {
       if (hitResult && hitResult.item.className !== 'Raster') {
         hitResult.item.selected = true;
         activePath = hitResult.item;
+        this.group.addChild(activePath); // 放到顶层
       }
       if (hitResult && hitResult.type === 'fill') {
         panMode = 'fill';
       } else if (hitResult && hitResult.type === 'stroke') {
         panMode = 'stroke';
         hitIndex = hitResult.location.index;
+        //点击多边形边，添加一个 端点
         if (activePath.data.type === 'polygon') {
-          console.log(hitResult);
           activePath.insert(hitIndex + 1, new paper.Segment(hitResult.location.point));
         }
       } else if (hitResult && hitResult.type === 'segment') {
         panMode = 'segment';
         hitIndex = hitResult.segment.index;
+        // shift点击 删除端点
+        if (e.event.shiftKey) {
+          activePath.removeSegment(hitIndex);
+          panMode = '';
+        }
       } else {
         panMode = '';
       }
@@ -117,6 +123,15 @@ class MyLabel {
         }
       }
     };
+    this.panTool.onKeyDown = e => {
+      if (e.key === 'delete' || e.key === 'backspace') {
+        this.group.getItems().forEach(e => {
+          if (e.selected) {
+            e.remove();
+          }
+        });
+      }
+    };
   }
   onResize(e) {}
 
@@ -144,6 +159,7 @@ class MyLabel {
   initPolygonTool() {
     let polygon;
     let clickTime = -1000;
+
     this.polygonTool.onMouseUp = e => {
       let temp = new paper.Path({ parent: this.group });
       let point = temp.globalToLocal(e.point);
@@ -158,6 +174,7 @@ class MyLabel {
           parent: this.group,
         });
       }
+      //双击
       if (e.timeStamp - clickTime < 300) {
         clickTime = -1000;
         polygon.closed = true;
@@ -169,7 +186,6 @@ class MyLabel {
     };
     this.polygonTool.onMouseMove = e => {
       if (polygon) {
-        console.log(polygon);
         let temp = new paper.Path({ parent: this.group });
         let point = temp.globalToLocal(e.point);
         var path1 = new paper.Path.Line({
@@ -178,6 +194,7 @@ class MyLabel {
           strokeColor: 'red',
           strokeWidth: 3,
           fillColor: '#ff000033',
+          parent: this.group,
         });
         path1.removeOnMove();
         var path2 = new paper.Path.Line({
@@ -186,6 +203,7 @@ class MyLabel {
           strokeColor: 'red',
           strokeWidth: 3,
           fillColor: '#ff000033',
+          parent: this.group,
         });
         path2.removeOnMove();
       }
