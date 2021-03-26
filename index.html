@@ -21,6 +21,7 @@
       <button onclick="setMode('pan')">pan</button>
       <button onclick="setMode('rectangle')">rectangle</button>
       <button onclick="setMode('polygon')">polygon</button>
+      <button onclick="setMode('brush')">brush</button>
     </div>
     <script src="Label.js"></script>
     <script>
@@ -30,16 +31,18 @@
         'https://eapidata.obs.cn-north-4.myhuaweicloud.com/6e7490dc-ab6b-4436-842e-ba0870dbf532.jpg'
       );
       myLabel.setMode('pan');
-      myLabel.addRectangle({
-        from: [100, 100],
-        to: [200, 200],
-        strokeColor: 'green',
-        strokeWidth: 3,
-        fillColor: '#ff000033',
-        data: {
-          id: new Date().getTime(),
+      myLabel.addRectangle(
+        {
+          from: [100, 100],
+          to: [200, 200],
+          strokeColor: 'green',
+          strokeWidth: 3,
+          fillColor: '#ff000033',
         },
-      });
+        {
+          id: new Date().getTime(),
+        }
+      );
       myLabel.addPolygon(
         [
           [0, 0],
@@ -55,6 +58,10 @@
       );
       function setMode(mode) {
         myLabel.setMode(mode);
+      }
+      function getAll() {
+        let polygon = myLabel.getAll({ data: { type: 'polygon' } });
+        console.log(polygon.map(e => e.segments.map(e => e.point)));
       }
     </script>
   </body>
