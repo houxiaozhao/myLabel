@@ -1,5 +1,9 @@
 # 基于 paper.js 的图像标注工具。
 
+# example
+
+![](example.gif)
+
 # mode
 
 - pan 浏览模式
@@ -47,61 +51,60 @@
 setMode((string: 'pan' | 'rectangle' | 'polygon' | 'brush'));
 ```
 
-#### 添加矩形 addRectangle(option,data) 
+#### 添加矩形 addRectangle(option,data)
 
-| 参数   | 说明                                                         |
-| ------ | ------------------------------------------------------------ |
+| 参数   | 说明                                                                             |
+| ------ | -------------------------------------------------------------------------------- |
 | option | 参考 [Paper.js — Path](http://paperjs.org/reference/path/#path-rectangle-object) |
-| data   | 携带自定义参数，注意不要在data里添加type属性，默认为图形type |
+| data   | 携带自定义参数，注意不要在 data 里添加 type 属性，默认为图形 type                |
 
 ```javascript
-
-myLabel.addRectangle({
+myLabel.addRectangle(
+  {
     from: [100, 100],
     to: [200, 200],
     strokeColor: 'green',
     strokeWidth: 3,
-    fillColor: '#ff000033'
-},{
+    fillColor: '#ff000033',
+  },
+  {
     id: new Date().getTime(),
-})
+  }
+);
 ```
 
 #### 添加多边形 addPolygon(points, option, data)
 
-| 参数   | 说明                                                         |      |
-| ------ | ------------------------------------------------------------ | ---- |
-| points | point[] 参考[Paper.js — Point](http://paperjs.org/reference/point/) |      |
-| option | 参考 [Paper.js — Path](http://paperjs.org/reference/path/#path-rectangle-object) |      |
-| data   | 携带自定义参数，注意不要在data里添加type属性，默认为图形type |      |
+| 参数   | 说明                                                                             |     |
+| ------ | -------------------------------------------------------------------------------- | --- |
+| points | point[] 参考[Paper.js — Point](http://paperjs.org/reference/point/)              |     |
+| option | 参考 [Paper.js — Path](http://paperjs.org/reference/path/#path-rectangle-object) |     |
+| data   | 携带自定义参数，注意不要在 data 里添加 type 属性，默认为图形 type                |     |
 
 ```javascript
 myLabel.addPolygon(
-    [
-        [0, 0],
-        [100, 0],
-        [200, 100],
-        [100, 100],
-    ],
-    {
-        strokeColor: 'red',
-        strokeWidth: 1,
-        fillColor: '#ff000033',
-    }
+  [
+    [0, 0],
+    [100, 0],
+    [200, 100],
+    [100, 100],
+  ],
+  {
+    strokeColor: 'red',
+    strokeWidth: 1,
+    fillColor: '#ff000033',
+  }
 );
 ```
 
-
-
 #### 获取图形 getAll(option)
 
-| 参数   | 说明                                                         |
-| ------ | ------------------------------------------------------------ |
+| 参数   | 说明                                                                     |
+| ------ | ------------------------------------------------------------------------ |
 | option | [Paper.js — Group](http://paperjs.org/reference/group/#getitems-options) |
 
 ```javascript
-myLabel.getAll({ data: { type: 'polygon' } });// 获取特定type图形
-myLabel.getAll({ data: { id: 'xxx' } });// 获取自定义参数图形
-myLabel.getAll({})// 获取所有，包含背景图片
+myLabel.getAll({ data: { type: 'polygon' } }); // 获取特定type图形
+myLabel.getAll({ data: { id: 'xxx' } }); // 获取自定义参数图形
+myLabel.getAll({}); // 获取所有，包含背景图片
 ```
-
