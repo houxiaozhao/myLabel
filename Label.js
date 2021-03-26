@@ -141,17 +141,13 @@ class MyLabel {
       let temp = new paper.Path({ parent: this.group });
       let point = temp.globalToLocal(e.point);
       let downPoint = temp.globalToLocal(e.downPoint);
-      rect = new paper.Path.Rectangle({
-        from: downPoint,
-        to: point,
-        strokeColor: 'red',
-        strokeWidth: 3,
-        fillColor: '#ff000033',
-        data: {
-          type: 'rectangle',
-        },
-        parent: this.group,
-      });
+      temp.remove();
+
+      rect = this.addRectangle(
+        { from: downPoint, to: point, strokeColor: 'red', strokeWidth: 3, fillColor: '#ff000033' },
+        {}
+      );
+
       rect.removeOnDrag();
     };
   }
@@ -163,20 +159,24 @@ class MyLabel {
     this.polygonTool.onMouseUp = e => {
       let temp = new paper.Path({ parent: this.group });
       let point = temp.globalToLocal(e.point);
+      temp.remove();
       if (!polygon) {
-        polygon = new paper.Path({
-          strokeColor: 'red',
-          strokeWidth: 3,
-          fillColor: '#ff000033',
-          data: {
-            type: 'polygon',
+        polygon = this.addPolygon(
+          [],
+          {
+            strokeColor: 'red',
+            strokeWidth: 3,
+            fillColor: '#ff000033',
           },
-          parent: this.group,
-        });
+          {}
+        );
       }
       //双击
       if (e.timeStamp - clickTime < 300) {
         clickTime = -1000;
+        if (polygon.segments.length < 3) {
+          polygon.remove();
+        }
         polygon.closed = true;
         polygon = null;
       } else {
@@ -188,6 +188,7 @@ class MyLabel {
       if (polygon) {
         let temp = new paper.Path({ parent: this.group });
         let point = temp.globalToLocal(e.point);
+        temp.remove();
         var path1 = new paper.Path.Line({
           from: polygon.firstSegment.point,
           to: point,
@@ -213,6 +214,11 @@ class MyLabel {
   addRectangle(option, data) {
     let rect = new paper.Path.Rectangle(Object.assign({ parent: this.group }, option));
     rect.data = Object.assign({ type: 'rectangle' }, data);
+    rect.onDoubleClick = e => {
+      this.setMode('pan');
+      e.target.selected = true;
+    };
+    return rect;
   }
   addPolygon(points = [], option, data) {
     let polygon = new paper.Path(Object.assign({ parent: this.group, closed: true }, option));
@@ -220,6 +226,11 @@ class MyLabel {
     points.forEach(point => {
       polygon.add(point);
     });
+    polygon.onDoubleClick = e => {
+      this.setMode('pan');
+      e.target.selected = true;
+    };
+    return polygon;
   }
 
   setMode(mode) {
