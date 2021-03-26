@@ -158,15 +158,46 @@ class MyLabel {
 
   initPolygonTool() {
     let polygon;
-    let clickTime = -1000;
+    let points = [];
 
-    this.polygonTool.onMouseUp = e => {
+    this.polygonTool.onMouseDown = e => {
       let temp = new paper.Path({ parent: this.group });
       let point = temp.globalToLocal(e.point);
       temp.remove();
-      if (!polygon) {
+      points.push(point);
+      if (polygon) {
+        polygon.remove();
+      }
+      polygon = this.addPolygon(
+        points,
+        {
+          strokeColor: 'red',
+          strokeWidth: 3,
+          fillColor: '#ff000033',
+        },
+        {}
+      );
+      //   if (!polygon) {
+      //     polygon = this.addPolygon(
+      //       [],
+      //       {
+      //         strokeColor: 'red',
+      //         strokeWidth: 3,
+      //         fillColor: '#ff000033',
+      //       },
+      //       {}
+      //     );
+      //   }
+      //   polygon.add(point);
+    };
+    this.polygonTool.onMouseMove = e => {
+      if (polygon) {
+        let temp = new paper.Path({ parent: this.group });
+        let point = temp.globalToLocal(e.point);
+        temp.remove();
+        polygon.remove();
         polygon = this.addPolygon(
-          [],
+          points.concat(point),
           {
             strokeColor: 'red',
             strokeWidth: 3,
@@ -174,43 +205,45 @@ class MyLabel {
           },
           {}
         );
-      }
-      //双击
-      if (e.timeStamp - clickTime < 300) {
-        clickTime = -1000;
-        if (polygon.segments.length < 3) {
-          polygon.remove();
-        }
-        polygon.closed = true;
-        polygon = null;
-      } else {
-        clickTime = e.timeStamp;
-        polygon.add(point);
+        // polygon.add(point);
+        // var path1 = new paper.Path.Line({
+        //   from: polygon.firstSegment.point,
+        //   to: point,
+        //   strokeColor: 'red',
+        //   strokeWidth: 3,
+        //   fillColor: '#ff000033',
+        //   parent: this.group,
+        // });
+        // path1.removeOnMove();
+        // var path2 = new paper.Path.Line({
+        //   from: polygon.lastSegment.point,
+        //   to: point,
+        //   strokeColor: 'red',
+        //   strokeWidth: 3,
+        //   fillColor: '#ff000033',
+        //   parent: this.group,
+        // });
+        // path2.removeOnMove();
       }
     };
-    this.polygonTool.onMouseMove = e => {
-      if (polygon) {
-        let temp = new paper.Path({ parent: this.group });
-        let point = temp.globalToLocal(e.point);
-        temp.remove();
-        var path1 = new paper.Path.Line({
-          from: polygon.firstSegment.point,
-          to: point,
-          strokeColor: 'red',
-          strokeWidth: 3,
-          fillColor: '#ff000033',
-          parent: this.group,
-        });
-        path1.removeOnMove();
-        var path2 = new paper.Path.Line({
-          from: polygon.lastSegment.point,
-          to: point,
-          strokeColor: 'red',
-          strokeWidth: 3,
-          fillColor: '#ff000033',
-          parent: this.group,
-        });
-        path2.removeOnMove();
+    this.polygonTool.onKeyDown = e => {
+      console.log(e);
+      if (e.key === 'n') {
+        if (polygon) {
+          if (polygon.segments.length < 3) {
+            polygon.remove();
+          }
+          polygon.closed = true;
+          polygon = null;
+          points = [];
+        }
+      }
+      if (e.key === 'escape') {
+        if (polygon) {
+          polygon.remove();
+          polygon = null;
+          points = [];
+        }
       }
     };
   }
@@ -220,11 +253,13 @@ class MyLabel {
     rect.data = Object.assign({ type: 'rectangle' }, data);
     rect.onMouseEnter = e => {
       if (this.mode === 'pan') {
+        e.target.strokeWidth += 2;
         this.el.style.cursor = 'move';
       }
     };
     rect.onMouseLeave = e => {
       if (this.mode === 'pan') {
+        e.target.strokeWidth -= 2;
         this.el.style.cursor = 'default';
       }
     };
@@ -238,13 +273,18 @@ class MyLabel {
     });
     polygon.onMouseEnter = e => {
       if (this.mode === 'pan') {
+        e.target.strokeWidth += 2;
         this.el.style.cursor = 'move';
       }
     };
     polygon.onMouseLeave = e => {
       if (this.mode === 'pan') {
+        e.target.strokeWidth -= 2;
         this.el.style.cursor = 'default';
       }
+    };
+    polygon.onDoubleClick = e => {
+      console.log(e);
     };
     return polygon;
   }
