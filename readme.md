@@ -5,6 +5,7 @@
 - pan 浏览模式
 - rectangle 画矩形
 - polygon 画多边形
+- brush 画笔
 
 ## pan
 

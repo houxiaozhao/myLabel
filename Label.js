@@ -16,10 +16,12 @@ class MyLabel {
     this.panTool = new paper.Tool();
     this.rectangleTool = new paper.Tool();
     this.polygonTool = new paper.Tool();
+    this.brushTool = new paper.Tool();
     this.init();
     this.initPanTool();
     this.initRectangleTool();
     this.initPolygonTool();
+    this.initBrushTool();
     this.setMode('pan');
   }
 
@@ -66,7 +68,7 @@ class MyLabel {
         guide: false,
         tolerance: 8 / paper.view.zoom,
       });
-      //   console.log(hitResult);
+      console.log(hitResult.type);
       paper.project.selectedItems.forEach(item => {
         item.selected = false;
       });
@@ -177,18 +179,6 @@ class MyLabel {
         },
         {}
       );
-      //   if (!polygon) {
-      //     polygon = this.addPolygon(
-      //       [],
-      //       {
-      //         strokeColor: 'red',
-      //         strokeWidth: 3,
-      //         fillColor: '#ff000033',
-      //       },
-      //       {}
-      //     );
-      //   }
-      //   polygon.add(point);
     };
     this.polygonTool.onMouseMove = e => {
       if (polygon) {
@@ -205,25 +195,6 @@ class MyLabel {
           },
           {}
         );
-        // polygon.add(point);
-        // var path1 = new paper.Path.Line({
-        //   from: polygon.firstSegment.point,
-        //   to: point,
-        //   strokeColor: 'red',
-        //   strokeWidth: 3,
-        //   fillColor: '#ff000033',
-        //   parent: this.group,
-        // });
-        // path1.removeOnMove();
-        // var path2 = new paper.Path.Line({
-        //   from: polygon.lastSegment.point,
-        //   to: point,
-        //   strokeColor: 'red',
-        //   strokeWidth: 3,
-        //   fillColor: '#ff000033',
-        //   parent: this.group,
-        // });
-        // path2.removeOnMove();
       }
     };
     this.polygonTool.onKeyDown = e => {
@@ -245,6 +216,25 @@ class MyLabel {
           points = [];
         }
       }
+    };
+  }
+  initBrushTool() {
+    let myPath;
+    this.brushTool.onMouseDown = e => {
+      myPath = new paper.Path({
+        parent: this.group,
+        data: {
+          type: 'brush',
+        },
+      });
+      myPath.strokeColor = 'red';
+      myPath.strokeWidth = 3;
+    };
+    this.brushTool.onMouseDrag = e => {
+      let temp = new paper.Path({ parent: this.group });
+      let point = temp.globalToLocal(e.point);
+      temp.remove();
+      myPath.add(point);
     };
   }
 
@@ -305,6 +295,10 @@ class MyLabel {
         break;
       case 'polygon':
         this.polygonTool.activate();
+        this.el.style.cursor = 'crosshair';
+        break;
+      case 'brush':
+        this.brushTool.activate();
         this.el.style.cursor = 'crosshair';
         break;
       default:
