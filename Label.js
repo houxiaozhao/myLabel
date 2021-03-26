@@ -2,6 +2,7 @@ class MyLabel {
   factor = 1.25;
   minZoom = 0.1;
   maxZoom = 10;
+  mode = 'pan';
   constructor(el, image) {
     paper.setup(el);
     this.el = el;
@@ -19,6 +20,7 @@ class MyLabel {
     this.initPanTool();
     this.initRectangleTool();
     this.initPolygonTool();
+    this.setMode('pan');
   }
 
   init() {
@@ -81,6 +83,8 @@ class MyLabel {
         //点击多边形边，添加一个 端点
         if (activePath.data.type === 'polygon') {
           activePath.insert(hitIndex + 1, new paper.Segment(hitResult.location.point));
+          panMode = 'segment';
+          hitIndex = hitIndex + 1;
         }
       } else if (hitResult && hitResult.type === 'segment') {
         panMode = 'segment';
@@ -214,9 +218,15 @@ class MyLabel {
   addRectangle(option, data) {
     let rect = new paper.Path.Rectangle(Object.assign({ parent: this.group }, option));
     rect.data = Object.assign({ type: 'rectangle' }, data);
-    rect.onDoubleClick = e => {
-      this.setMode('pan');
-      e.target.selected = true;
+    rect.onMouseEnter = e => {
+      if (this.mode === 'pan') {
+        this.el.style.cursor = 'move';
+      }
+    };
+    rect.onMouseLeave = e => {
+      if (this.mode === 'pan') {
+        this.el.style.cursor = 'default';
+      }
     };
     return rect;
   }
@@ -226,9 +236,15 @@ class MyLabel {
     points.forEach(point => {
       polygon.add(point);
     });
-    polygon.onDoubleClick = e => {
-      this.setMode('pan');
-      e.target.selected = true;
+    polygon.onMouseEnter = e => {
+      if (this.mode === 'pan') {
+        this.el.style.cursor = 'move';
+      }
+    };
+    polygon.onMouseLeave = e => {
+      if (this.mode === 'pan') {
+        this.el.style.cursor = 'default';
+      }
     };
     return polygon;
   }
@@ -237,15 +253,19 @@ class MyLabel {
     paper.project.selectedItems.forEach(item => {
       item.selected = false;
     });
+    this.mode = mode;
     switch (mode) {
       case 'pan':
         this.panTool.activate();
+        this.el.style.cursor = 'default';
         break;
       case 'rectangle':
         this.rectangleTool.activate();
+        this.el.style.cursor = 'crosshair';
         break;
       case 'polygon':
         this.polygonTool.activate();
+        this.el.style.cursor = 'crosshair';
         break;
       default:
         break;
